@@ -10,9 +10,16 @@
 
 	const debouncedGetTopTags = debounceFn(getTopTags, 500);
 
-	let artistInputValue = 'Nils Frahm';
+	let artistInputValue =
+		typeof window !== 'undefined' ? new URL(document.location.href).searchParams.get('s') : '';
 	let cachedGenres = getCachedGenres();
 	let cachedAliases = getCachedAliases();
+
+	$: {
+		if (typeof window === 'undefined') break $;
+
+		window.history.replaceState(null, '', `/?s=${artistInputValue}`);
+	}
 
 	/**
 	 * Fetches an artist genres.
@@ -62,11 +69,12 @@
 	<input
 		type="text"
 		bind:value={artistInputValue}
-		placeholder="Type the artist name..."
+		placeholder="Artist name..."
 		aria-label="Artist Name"
+		autofocus
 	/>
 	<div class="content">
-		{#if artistInputValue.trim().length !== ''}
+		{#if artistInputValue.trim() !== ''}
 			{#await fetchArtistGenres({ searchName: artistInputValue })}
 				<div class="loading">
 					Looking for the genres of '<strong>{artistInputValue}</strong>'...
@@ -97,7 +105,7 @@
 <style>
 	.container {
 		font-family: arial;
-        line-height: 1.4;
+		line-height: 1.4;
 		min-height: 100vh;
 	}
 
@@ -107,10 +115,12 @@
 
 	input {
 		font-size: clamp(1rem, 10vw, 8rem);
-        line-height: 1.4;
+		line-height: 1.4;
 		width: 100%;
 		border: none;
 		border-bottom: 2px solid;
+		padding-left: 1rem;
+		padding-right: 1rem;
 	}
 
 	.error {
@@ -129,6 +139,6 @@
 		gap: clamp(1rem, 2vw, 5rem);
 		list-style: none;
 		padding: 0;
-		font-size: clamp(2rem, 2.5vw, 5rem);
+		font-size: clamp(2rem, 3.5vw + 4.5vh, 10rem);
 	}
 </style>
