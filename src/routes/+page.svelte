@@ -65,6 +65,10 @@
 	};
 </script>
 
+<svelte:head>
+	<title>G e n r</title>
+</svelte:head>
+
 <div class="container">
 	<input
 		type="text"
