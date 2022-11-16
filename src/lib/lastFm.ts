@@ -21,6 +21,10 @@ export const isArtistNotFoundError = (error: any): error is LastFmErrorObject =>
 	return error?.code === ERROR_CODE_ARTIST_NOT_FOUND;
 };
 
+export const isNoGenresFoundError = (error: any): error is LastFmErrorObject => {
+	return error?.code === ERROR_CODE_NO_GENRES_FOUND;
+};
+
 /** Gets the Last FM url of an artist given it's canonical name */
 const getArtistUrl = (canonicalName: string) =>
 	`https://www.last.fm/music/${canonicalName.replace(/\W/g, '+').toLocaleLowerCase()}`;
@@ -93,8 +97,10 @@ export const looseGetTopTags = ({
 	}
 
 	return getTopTags(possibleName).catch((err) => {
-		if (!isArtistNotFoundError(err)) throw err;
+		if (isArtistNotFoundError(err) || isNoGenresFoundError(err)) {
+			return searchArtistName(possibleName).then(getTopTags);
+		}
 
-		return searchArtistName(possibleName).then(getTopTags);
+		throw err;
 	});
 };

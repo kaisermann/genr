@@ -51,6 +51,7 @@
 
 		// update cache
 		searchPromise.then((artist) => {
+			if (searchId !== activeSearchId) return;
 			const normalizedArtistName = artist.name.toLocaleLowerCase();
 
 			// cache the artist and its genres
@@ -69,7 +70,7 @@
 
 	async function handleInputChange(e: Event) {
 		state = 'idle';
-		
+
 		if (typeof window === 'undefined') return;
 
 		const searchTerm = (e.target as HTMLInputElement).value;
