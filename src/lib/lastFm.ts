@@ -17,6 +17,14 @@ export type LastFmArtistWithGenres = {
 	genres: Array<LastFmTag>;
 };
 
+function createArtistNotFoundError() {
+	return { code: ERROR_CODE_ARTIST_NOT_FOUND, message: 'Artist not found' };
+}
+
+function createGenresNotFoundError() {
+	return { code: ERROR_CODE_NO_GENRES_FOUND, message: 'No genres found' };
+}
+
 export const isArtistNotFoundError = (error: any): error is LastFmErrorObject => {
 	return error?.code === ERROR_CODE_ARTIST_NOT_FOUND;
 };
@@ -52,7 +60,7 @@ export const searchArtistName = (partialName: string) => {
 
 		if (firstMatch) return firstMatch.name as string;
 
-		throw { code: ERROR_CODE_ARTIST_NOT_FOUND, message: 'Artist not found' };
+		throw createArtistNotFoundError();
 	});
 };
 
@@ -65,11 +73,11 @@ export const getTopTags = (name: string) => {
 		}
 
 		if (json?.toptags?.tag == null) {
-			throw { code: ERROR_CODE_ARTIST_NOT_FOUND, message: 'Artist not found' };
+			throw createArtistNotFoundError();
 		}
 
 		if (json?.toptags.tag.length === 0) {
-			throw { code: ERROR_CODE_NO_GENRES_FOUND, message: 'No genres found' };
+			throw createGenresNotFoundError();
 		}
 
 		return {
@@ -103,10 +111,7 @@ export const looseGetTopTags = ({
 				.catch((err) => {
 					// if there're still no genres here, assume the artist doesn't exist
 					if (isNoGenresFoundError(err)) {
-						return Promise.reject({
-							code: ERROR_CODE_ARTIST_NOT_FOUND,
-							message: 'Artist not found'
-						});
+						throw createArtistNotFoundError();
 					}
 
 					throw err;

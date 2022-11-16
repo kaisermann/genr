@@ -40,7 +40,6 @@
 			})
 			.catch((err) => {
 				if (searchId !== activeSearchId) return;
-				if (innerTerm !== term) return;
 				result = undefined;
 				error = err;
 			})
@@ -69,22 +68,26 @@
 	}, 500);
 
 	async function handleInputChange(e: Event) {
+		cancelSearch();
 		state = 'idle';
 
 		if (typeof window === 'undefined') return;
 
-		const searchTerm = (e.target as HTMLInputElement).value;
+		const searchTerm = (e.target as HTMLInputElement).value.trim();
 		const normalizedSearchTerm = searchTerm.toLocaleLowerCase();
 		const possibleName = cachedAliases[normalizedSearchTerm] || normalizedSearchTerm;
 
-		if (possibleName.length === 0) return;
+		if (possibleName.length === 0) {
+			result = undefined;
+			error = undefined;
+			return;
+		}
 
 		const isCached = cachedGenres?.[possibleName] != null;
 
 		result = undefined;
 
 		if (isCached) {
-			cancelSearch();
 			result = cachedGenres[possibleName];
 			error = undefined;
 			state = 'fullfilled';
