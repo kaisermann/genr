@@ -98,7 +98,19 @@ export const looseGetTopTags = ({
 
 	return getTopTags(possibleName).catch((err) => {
 		if (isArtistNotFoundError(err) || isNoGenresFoundError(err)) {
-			return searchArtistName(possibleName).then(getTopTags);
+			return searchArtistName(possibleName)
+				.then(getTopTags)
+				.catch((err) => {
+					// if there're still no genres here, assume the artist doesn't exist
+					if (isNoGenresFoundError(err)) {
+						return Promise.reject({
+							code: ERROR_CODE_ARTIST_NOT_FOUND,
+							message: 'Artist not found'
+						});
+					}
+
+					throw err;
+				});
 		}
 
 		throw err;
