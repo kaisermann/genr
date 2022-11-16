@@ -68,6 +68,8 @@
 	}, 500);
 
 	async function handleInputChange(e: Event) {
+		state = 'idle';
+		
 		if (typeof window === 'undefined') return;
 
 		const searchTerm = (e.target as HTMLInputElement).value;
@@ -77,6 +79,8 @@
 		if (possibleName.length === 0) return;
 
 		const isCached = cachedGenres?.[possibleName] != null;
+
+		result = undefined;
 
 		if (isCached) {
 			cancelSearch();

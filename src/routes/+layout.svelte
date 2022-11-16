@@ -14,12 +14,16 @@
 		? 'fullfilled'
 		: 'idle';
 
+	$: canonicalName = searchTerm.length > 0 ? searchResult?.name : '';
+
+	$: slug = (canonicalName || searchTerm).toLocaleLowerCase().replace(/\W+/g, '+');
+
 	$: pageTitle = ['G e n r', searchResult?.name].filter(Boolean).join(' | ');
 
 	$: {
 		if (typeof window === 'undefined') break $;
 
-		window.history.replaceState(null, '', `/${searchTerm.toLocaleLowerCase().replace(/\W/g, '+')}`);
+		window.history.replaceState(null, '', `/${slug}`);
 	}
 
 	// cache a possible server side result
