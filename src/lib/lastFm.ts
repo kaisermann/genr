@@ -4,16 +4,29 @@ const API_BASE_URL = 'https://ws.audioscrobbler.com/2.0';
 const ERROR_CODE_ARTIST_NOT_FOUND = 6;
 const ERROR_CODE_NO_GENRES_FOUND = 72671;
 
-export const isArtistNotFoundError = (error) => {
+export type LastFmErrorObject = {
+	code: number;
+	message: string;
+};
+
+export type LastFmTag = { name: string; url: string };
+
+export type LastFmArtistWithGenres = {
+	name: string;
+	url: string;
+	genres: Array<LastFmTag>;
+};
+
+export const isArtistNotFoundError = (error: any): error is LastFmErrorObject => {
 	return error?.code === ERROR_CODE_ARTIST_NOT_FOUND;
 };
 
 /** Gets the Last FM url of an artist given it's canonical name */
-const getArtistUrl = (artist) =>
-	`https://www.last.fm/music/${artist.replace(/\W/g, '+').toLocaleLowerCase()}`;
+const getArtistUrl = (canonicalName: string) =>
+	`https://www.last.fm/music/${canonicalName.replace(/\W/g, '+').toLocaleLowerCase()}`;
 
 /** Replaces non word characters with a plus sign */
-const request = ({ method, query = {} }) => {
+const request = ({ method, query = {} }: { method: string; query: Record<string, any> }) => {
 	const url = new URL(API_BASE_URL);
 
 	url.searchParams.append('method', method);
@@ -29,17 +42,17 @@ const request = ({ method, query = {} }) => {
 	});
 };
 
-export const searchArtistName = (partialName) => {
+export const searchArtistName = (partialName: string) => {
 	return request({ method: 'artist.search', query: { artist: partialName } }).then((data) => {
 		const firstMatch = data.results.artistmatches.artist[0];
 
-		if (firstMatch) return firstMatch.name;
+		if (firstMatch) return firstMatch.name as string;
 
-		throw 'No artist found';
+		throw { code: ERROR_CODE_ARTIST_NOT_FOUND, message: 'Artist not found' };
 	});
 };
 
-export const getTopTags = (name) => {
+export const getTopTags = (name: string) => {
 	return request({ method: 'artist.gettoptags', query: { artist: name } }).then((json) => {
 		const hasError = json.error != null;
 
@@ -59,6 +72,29 @@ export const getTopTags = (name) => {
 			url: getArtistUrl(json.toptags['@attr'].artist),
 			name: json.toptags['@attr'].artist,
 			genres: json.toptags.tag
-		};
+		} as LastFmArtistWithGenres;
+	});
+};
+
+/**
+ * Fetches an artist genres.
+ * If the artist is not found, it will try to find the canonial artist name via the artist.search endpoint
+ * and then fetch the genres for the canonial artist name.
+ */
+export const looseGetTopTags = ({
+	searchName
+}: {
+	searchName?: string;
+}): Promise<LastFmArtistWithGenres> => {
+	const possibleName = searchName?.trim();
+
+	if (possibleName == null) {
+		return Promise.reject({ code: 10002, message: 'No name provided' });
+	}
+
+	return getTopTags(possibleName).catch((err) => {
+		if (!isArtistNotFoundError(err)) throw err;
+
+		return searchArtistName(possibleName).then(getTopTags);
 	});
 };
