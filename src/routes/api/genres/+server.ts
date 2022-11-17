@@ -11,7 +11,7 @@ export function GET({ url }) {
 	const artistName = url.searchParams.get('artist');
 
 	if (artistName == null) {
-		return Promise.reject({ code: 10002, message: 'No name provided' });
+		return json({ code: 10002, message: 'No name provided' });
 	}
 
 	return getTopTags(artistName)
@@ -22,6 +22,7 @@ export function GET({ url }) {
 			if (isArtistNotFoundError(err) || isNoGenresFoundError(err)) {
 				return searchArtistName(artistName)
 					.then(getTopTags)
+					.then((result) => json({ data: result, error: null }))
 					.catch((err) => {
 						// if there're still no genres here, assume the artist doesn't exist
 						if (isNoGenresFoundError(err)) {

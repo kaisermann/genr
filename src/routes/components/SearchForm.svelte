@@ -1,11 +1,7 @@
 <script lang="ts" context="module">
 	import { getCachedAliases, getCachedGenres, setCachedAliases, setCachedGenres } from '$lib/cache';
 	import { debounceFn } from '$lib/debounceFn';
-	import {
-		looseGetTopTags,
-		type LastFmArtistWithGenres,
-		type LastFmErrorObject
-	} from '$lib/lastFm';
+	import type { LastFmArtistWithGenres, LastFmErrorObject } from '$lib/lastFm';
 
 	export type SearchPromise = Promise<LastFmArtistWithGenres>;
 </script>
@@ -23,21 +19,27 @@
 	$: term = innerTerm.trim();
 
 	// An id used to prevent stale promises from updating the result
-	let activeSearchId: symbol | undefined;
+	let activeSearchController: AbortController | undefined = undefined;
 
-	const [handleSearch, cancelSearch] = debounceFn((searchTerm: string) => {
-		const searchId = Symbol();
-		activeSearchId = searchId;
+	const [handleSearch, cancelDebouncedSearch] = debounceFn((searchTerm: string) => {
+		activeSearchController?.abort();
 
-		const searchPromise = fetch(`/api/genres?artist=${searchTerm}`).then((response) =>
-			response.json()
-		);
+		const controller = new AbortController();
+		activeSearchController = controller;
+
+		const searchPromise = fetch(`/api/genres?artist=${searchTerm}`, {
+			signal: activeSearchController.signal
+		})
+			.then((response) => response.json())
+			.catch((err) => {
+				if (controller.signal.aborted) return;
+				throw err;
+			});
 
 		// update the result
 		searchPromise
 			.then((json) => {
-				if (searchId !== activeSearchId) return;
-
+				if (controller.signal.aborted) return;
 				if (json.error) {
 					error = json.error;
 					result = undefined;
@@ -47,17 +49,15 @@
 				}
 			})
 			.finally(() => {
-				if (searchId !== activeSearchId) return;
 				state = 'fullfilled';
 			});
 
 		// update cache
 		searchPromise.then((json) => {
-			if(json.error) return
-			
-			const artist = json.data;
+			if (controller.signal.aborted) return;
+			if (json.error) return;
 
-			if (searchId !== activeSearchId) return;
+			const artist = json.data;
 			const normalizedArtistName = artist.name.toLocaleLowerCase();
 
 			// cache the artist and its genres
@@ -74,8 +74,16 @@
 		});
 	}, 500);
 
+	// Cancels any pending search
+	// - If the debounced method didn't run
+	// - If the debounced method ran but the promise is still pending
+	const cancelActiveSearch = () => {
+		cancelDebouncedSearch();
+		activeSearchController?.abort();
+	};
+
 	async function handleInputChange(e: Event) {
-		cancelSearch();
+		cancelActiveSearch();
 		state = 'idle';
 
 		if (typeof window === 'undefined') return;
@@ -102,7 +110,7 @@
 		}
 
 		state = 'loading';
-		activeSearchId = undefined;
+		activeSearchController?.abort();
 		handleSearch(possibleName);
 	}
 </script>
