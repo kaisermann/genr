@@ -70,10 +70,13 @@ const nonRelevantTags = [
 	'seen-live',
 	'favorites',
 	'favourites',
+	'female fronted',
 	'female vocalists',
 	'female-vocalists',
 	'singer songwriter',
 	'singer-songwriter',
+	'beautiful voice',
+	'beautiful-voice'
 ];
 
 export const filterOutIrrelevantTags = (tags: Array<LastFmTag>) => {
