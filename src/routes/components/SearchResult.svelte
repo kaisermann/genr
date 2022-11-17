@@ -50,6 +50,13 @@
 		font-size: clamp(2rem, 3.5vw + 4.5vh, 10rem);
 	}
 
+	.genre a {
+		text-decoration-style: solid;
+	}
+	.genre a:hover {
+		text-decoration-style: dotted;
+	}
+
 	.loading {
 		font-size: clamp(2rem, 3.5vw + 4.5vh, 10rem);
 		word-wrap: break-word;

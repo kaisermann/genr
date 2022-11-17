@@ -5,7 +5,16 @@
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<link rel="stylesheet" href="%sveltekit.assets%/reset.css" />
 		<meta name="viewport" content="width=device-width" />
+		<script async src="https://cdn.panelbear.com/analytics.js?site=EpprNvF1be8"></script>
 		%sveltekit.head%
+		<script>
+			window.panelbear =
+				window.panelbear ||
+				function () {
+					(window.panelbear.q = window.panelbear.q || []).push(arguments);
+				};
+			panelbear('config', { site: 'EpprNvF1be8' });
+		</script>
 	</head>
 	<body>
 		<div style="display: contents">%sveltekit.body%</div>
