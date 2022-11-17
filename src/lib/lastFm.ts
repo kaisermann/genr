@@ -74,7 +74,8 @@ const nonRelevantTags = [
 	'female-frontend',
 	'female-vocalists',
 	'singer-songwriter',
-	'beautiful-voice'
+	'beautiful-voice',
+	'oldies'
 ];
 
 /**
@@ -89,15 +90,27 @@ export const filterOutIrrelevantTags = (
 		artist: string;
 	}
 ) => {
-	const normalizedArtist = artist.toLowerCase();
+	// remove spaces and lowercase artist name
+	const normalizedArtist = artist.toLocaleLowerCase().replace(/\W/g, '-');
+
+	// get a version of the artist without a possible article (the beatles vs beatles)
+	const artistWithoutArticles = normalizedArtist.replace(/^(the|a|an)-+/i, '');
+
+	// to catch tags such as rhcp (red hot chili peppers)
+	const initials = normalizedArtist
+		.split('-')
+		.map((word) => word.charAt(0))
+		.join('');
 
 	return tags.filter((tag) => {
-		const normalizedTag = tag.name.toLowerCase().replace(/\W/g, '-');
+		const normalizedTag = tag.name.toLocaleLowerCase().replace(/\W/g, '-');
 
 		if (nonRelevantTags.includes(normalizedTag)) return false;
 
 		// Filter out tags that are the same as the artist name
 		if (normalizedTag === normalizedArtist) return false;
+		if (normalizedTag === artistWithoutArticles) return false;
+		if (normalizedTag === initials) return false;
 
 		return true;
 	});
