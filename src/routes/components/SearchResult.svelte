@@ -17,12 +17,12 @@
 			<p class="error">{error.message}</p>
 		{:else if artist != null}
 			<div>
-				<a class="artist-name" href={artist.url} target="_blank" rel="noreferrer">
+				<a class="name" href={artist.url} target="_blank" rel="noreferrer">
 					{artist.name}
 				</a>
 			</div>
 
-			<ul class="artist-genres">
+			<ul class="genres">
 				{#each artist.genres.slice(0, 8) as tag}
 					<li class="genre">
 						<a href={tag.url} target="_blank" rel="noreferrer">{tag.name}</a>
@@ -36,12 +36,12 @@
 </div>
 
 <style>
-	.artist-name {
+	.name {
 		font-size: clamp(1rem, 1.5vw, 3rem);
 		font-weight: bold;
 	}
 
-	.artist-genres {
+	.genres {
 		display: flex;
 		flex-wrap: wrap;
 		gap: clamp(1rem, 2vw, 5rem);

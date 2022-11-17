@@ -99,7 +99,7 @@ export const getTopTags = (name: string) => {
 		return {
 			url: getArtistUrl(json.toptags['@attr'].artist),
 			name: json.toptags['@attr'].artist,
-			genres: json.toptags.tag.filter(filterOutIrrelevantTags)
+			genres: filterOutIrrelevantTags(json.toptags.tag)
 		} as LastFmArtistWithGenres;
 	});
 };
