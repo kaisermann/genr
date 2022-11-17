@@ -71,11 +71,22 @@ const nonRelevantTags = [
 	'seen-live',
 	'favorites',
 	'favourites',
+	'male-frontend',
 	'female-frontend',
 	'female-vocalists',
+	'male-vocalists',
 	'singer-songwriter',
 	'beautiful-voice',
-	'oldies'
+	'oldies',
+	'50s',
+	'60s',
+	'70s',
+	'80s',
+	'90s',
+	'00s',
+	'usa',
+	'uk',
+	'england'
 ];
 
 /**
@@ -161,7 +172,7 @@ export const getTopTags = (name: string) => {
  * Fetches an artist genres.
  * If the artist is not found, it will try to find the canonial artist name via the artist.search endpoint
  * and then fetch the genres for the canonial artist name.
- * 
+ *
  * The "autocomplete" param of getTopTags is not good enough, so this is still needed.
  */
 export const looseGetTopTags = ({
