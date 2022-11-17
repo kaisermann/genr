@@ -83,7 +83,8 @@ export const getTopTags = (name: string) => {
 		return {
 			url: getArtistUrl(json.toptags['@attr'].artist),
 			name: json.toptags['@attr'].artist,
-			genres: json.toptags.tag
+			// `seen live` is not a genre but a very commonly used tag
+			genres: json.toptags.tag.filter((tag: LastFmTag) => tag.name !== 'seen live')
 		} as LastFmArtistWithGenres;
 	});
 };
