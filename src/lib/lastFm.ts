@@ -138,12 +138,21 @@ export const getTopTags = (name: string) => {
 			throw createGenresNotFoundError();
 		}
 
+		const lowerCaseTags = json.toptags.tag.map((tag: LastFmTag) => {
+			return {
+				name: tag.name.toLocaleLowerCase(),
+				url: tag.url
+			};
+		});
+
+		const genres = filterOutIrrelevantTags(lowerCaseTags, {
+			artist: json.toptags['@attr'].artist
+		});
+
 		return {
 			url: getArtistUrl(json.toptags['@attr'].artist),
 			name: json.toptags['@attr'].artist,
-			genres: filterOutIrrelevantTags(json.toptags.tag, {
-				artist: json.toptags['@attr'].artist
-			})
+			genres
 		} as LastFmArtistWithGenres;
 	});
 };
@@ -152,6 +161,8 @@ export const getTopTags = (name: string) => {
  * Fetches an artist genres.
  * If the artist is not found, it will try to find the canonial artist name via the artist.search endpoint
  * and then fetch the genres for the canonial artist name.
+ * 
+ * The "autocomplete" param of getTopTags is not good enough, so this is still needed.
  */
 export const looseGetTopTags = ({
 	searchName
