@@ -64,6 +64,22 @@ export const searchArtistName = (partialName: string) => {
 	});
 };
 
+// Some last FM tags that are not actual musical genres
+const nonRelevantTags = [
+	'seen live',
+	'seen-live',
+	'favorites',
+	'favourites',
+	'female vocalists',
+	'female-vocalists',
+	'singer songwriter',
+	'singer-songwriter',
+];
+
+export const filterOutIrrelevantTags = (tags: Array<LastFmTag>) => {
+	return tags.filter((tag) => !nonRelevantTags.includes(tag.name.toLowerCase()));
+};
+
 export const getTopTags = (name: string) => {
 	return request({ method: 'artist.gettoptags', query: { artist: name } }).then((json) => {
 		const hasError = json.error != null;
@@ -83,8 +99,7 @@ export const getTopTags = (name: string) => {
 		return {
 			url: getArtistUrl(json.toptags['@attr'].artist),
 			name: json.toptags['@attr'].artist,
-			// `seen live` is not a genre but a very commonly used tag
-			genres: json.toptags.tag.filter((tag: LastFmTag) => tag.name !== 'seen live')
+			genres: json.toptags.tag.filter(filterOutIrrelevantTags)
 		} as LastFmArtistWithGenres;
 	});
 };
