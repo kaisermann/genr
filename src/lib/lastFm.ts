@@ -65,26 +65,52 @@ export const searchArtistName = (partialName: string) => {
 };
 
 // Some last FM tags that are not actual musical genres
+// Space variants (such as "female vocalists") don't need to be included
+// because we compare tags after normalizing them (lower casing and replacing spaces with dashes)
 const nonRelevantTags = [
-	'seen live',
 	'seen-live',
 	'favorites',
 	'favourites',
-	'female fronted',
-	'female vocalists',
+	'female-frontend',
 	'female-vocalists',
-	'singer songwriter',
 	'singer-songwriter',
-	'beautiful voice',
 	'beautiful-voice'
 ];
 
-export const filterOutIrrelevantTags = (tags: Array<LastFmTag>) => {
-	return tags.filter((tag) => !nonRelevantTags.includes(tag.name.toLowerCase()));
+/**
+ * Given an array of LastFm Tags,
+ * returns an array of tags that are not in the nonRelevantTags array
+ */
+export const filterOutIrrelevantTags = (
+	tags: Array<LastFmTag>,
+	{
+		artist
+	}: {
+		artist: string;
+	}
+) => {
+	const normalizedArtist = artist.toLowerCase();
+
+	return tags.filter((tag) => {
+		const normalizedTag = tag.name.toLowerCase().replace(/\W/g, '-');
+
+		if (nonRelevantTags.includes(normalizedTag)) return false;
+
+		// Filter out tags that are the same as the artist name
+		if (normalizedTag === normalizedArtist) return false;
+
+		return true;
+	});
 };
 
 export const getTopTags = (name: string) => {
-	return request({ method: 'artist.gettoptags', query: { artist: name } }).then((json) => {
+	return request({
+		method: 'artist.gettoptags',
+		query: {
+			artist: name,
+			autocorrect: 1
+		}
+	}).then((json) => {
 		const hasError = json.error != null;
 
 		if (hasError) {
@@ -102,7 +128,9 @@ export const getTopTags = (name: string) => {
 		return {
 			url: getArtistUrl(json.toptags['@attr'].artist),
 			name: json.toptags['@attr'].artist,
-			genres: filterOutIrrelevantTags(json.toptags.tag)
+			genres: filterOutIrrelevantTags(json.toptags.tag, {
+				artist: json.toptags['@attr'].artist
+			})
 		} as LastFmArtistWithGenres;
 	});
 };
