@@ -25,23 +25,26 @@
 	// An id used to prevent stale promises from updating the result
 	let activeSearchId: symbol | undefined;
 
-	const [handleSearch, cancelSearch] = debounceFn((term: string) => {
+	const [handleSearch, cancelSearch] = debounceFn((searchTerm: string) => {
 		const searchId = Symbol();
 		activeSearchId = searchId;
 
-		const searchPromise = looseGetTopTags({ searchName: term });
+		const searchPromise = fetch(`/api/genres?artist=${searchTerm}`).then((response) =>
+			response.json()
+		);
 
 		// update the result
 		searchPromise
-			.then((response) => {
+			.then((json) => {
 				if (searchId !== activeSearchId) return;
-				result = response;
-				error = undefined;
-			})
-			.catch((err) => {
-				if (searchId !== activeSearchId) return;
-				result = undefined;
-				error = err;
+
+				if (json.error) {
+					error = json.error;
+					result = undefined;
+				} else {
+					error = undefined;
+					result = json.data;
+				}
 			})
 			.finally(() => {
 				if (searchId !== activeSearchId) return;
@@ -49,7 +52,11 @@
 			});
 
 		// update cache
-		searchPromise.then((artist) => {
+		searchPromise.then((json) => {
+			if(json.error) return
+			
+			const artist = json.data;
+
 			if (searchId !== activeSearchId) return;
 			const normalizedArtistName = artist.name.toLocaleLowerCase();
 
@@ -57,8 +64,8 @@
 			setCachedGenres({ ...cachedGenres, [normalizedArtistName]: artist });
 
 			// cache the artist's aliases
-			if (term != null && term !== normalizedArtistName) {
-				setCachedAliases({ ...cachedAliases, [term]: normalizedArtistName });
+			if (searchTerm != null && searchTerm !== normalizedArtistName) {
+				setCachedAliases({ ...cachedAliases, [searchTerm]: normalizedArtistName });
 			}
 
 			// update local cache variables

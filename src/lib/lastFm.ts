@@ -17,11 +17,11 @@ export type LastFmArtistWithGenres = {
 	genres: Array<LastFmTag>;
 };
 
-function createArtistNotFoundError() {
+export function createArtistNotFoundError() {
 	return { code: ERROR_CODE_ARTIST_NOT_FOUND, message: 'Artist not found' };
 }
 
-function createGenresNotFoundError() {
+export function createGenresNotFoundError() {
 	return { code: ERROR_CODE_NO_GENRES_FOUND, message: 'No genres found' };
 }
 

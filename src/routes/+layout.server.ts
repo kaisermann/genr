@@ -1,26 +1,33 @@
-import { looseGetTopTags } from '$lib/lastFm';
 import type { LayoutServerLoad } from './$types';
-import type { LastFmErrorObject } from '../lib/lastFm';
 
 // Load artist data in the server if artist is defined in the URL
-export async function load({ params }: LayoutServerLoad) {
+export async function load({ params, url }: LayoutServerLoad) {
+	if (params.artistName === 'favicon.ico') return;
+
 	const normalizedName = params.artistName?.replace(/\W/g, ' ') || '';
+	const origin = url.origin;
 
 	if (normalizedName) {
-		return looseGetTopTags({ searchName: normalizedName })
-			.then((result) => {
-				return {
-					searchTerm: normalizedName,
-					artistWithGenres: result,
-					error: undefined
-				};
-			})
-			.catch((error: LastFmErrorObject) => {
-				return {
-					searchTerm: normalizedName,
-					artistWithGenres: undefined,
-					error
-				};
+		const url = new URL('/api/genres', origin);
+
+		url.searchParams.append('artist', normalizedName);
+
+		return fetch(url)
+			.then((response) => response.json())
+			.then((json) => {
+				if (json.error) {
+					return {
+						searchTerm: normalizedName,
+						artistWithGenres: undefined,
+						error: json.error
+					};
+				} else {
+					return {
+						searchTerm: normalizedName,
+						artistWithGenres: json.data,
+						error: undefined
+					};
+				}
 			});
 	}
 }
