@@ -39,6 +39,7 @@
 	.name {
 		font-size: clamp(1rem, 1.5vw, 3rem);
 		font-weight: bold;
+		color: black;
 	}
 
 	.genres {
@@ -52,6 +53,9 @@
 
 	.genre a {
 		text-decoration-style: solid;
+		background-color: #000;
+		color: white;
+		padding: 0.5rem 1rem;
 	}
 	.genre a:hover {
 		text-decoration-style: dotted;
