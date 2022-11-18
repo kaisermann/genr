@@ -35,7 +35,7 @@ export const isNoGenresFoundError = (error: any): error is LastFmErrorObject => 
 
 /** Gets the Last FM url of an artist given it's canonical name */
 const getArtistUrl = (canonicalName: string) =>
-	`https://www.last.fm/music/${canonicalName.replace(/\W/g, '+').toLocaleLowerCase()}`;
+	`https://www.last.fm/music/${canonicalName.replace(/\s+/g, '+').toLocaleLowerCase()}`;
 
 /** Replaces non word characters with a plus sign */
 const request = ({ method, query = {} }: { method: string; query: Record<string, any> }) => {
