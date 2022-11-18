@@ -3,19 +3,32 @@ const API_BASE_URL = 'https://ws.audioscrobbler.com/2.0';
 
 const ERROR_CODE_ARTIST_NOT_FOUND = 6;
 const ERROR_CODE_NO_GENRES_FOUND = 72671;
+const ERROR_CODE_GENRE_NOT_FOUND = 72672;
 
 export type LastFmErrorObject = {
 	code: number;
 	message: string;
 };
 
-export type LastFmTag = { name: string; url: string };
+export type LastFmTag = {
+	name: string;
+	url: string;
+};
+
+export type LastFmGenreInfo = {
+	name: string;
+	summary: string;
+};
 
 export type LastFmArtistWithGenres = {
 	name: string;
 	url: string;
 	genres: Array<LastFmTag>;
 };
+
+export function createGenreNotFoundError() {
+	return { code: ERROR_CODE_GENRE_NOT_FOUND, message: 'Genre not found' };
+}
 
 export function createArtistNotFoundError() {
 	return { code: ERROR_CODE_ARTIST_NOT_FOUND, message: 'Artist not found' };
@@ -38,7 +51,15 @@ const getArtistUrl = (canonicalName: string) =>
 	`https://www.last.fm/music/${canonicalName.replace(/\s+/g, '+').toLocaleLowerCase()}`;
 
 /** Replaces non word characters with a plus sign */
-const request = ({ method, query = {} }: { method: string; query: Record<string, any> }) => {
+const request = ({
+	method,
+	query = {},
+	cache
+}: {
+	method: string;
+	query: Record<string, any>;
+	cache?: RequestCache;
+}) => {
 	const url = new URL(API_BASE_URL);
 
 	url.searchParams.append('method', method);
@@ -49,7 +70,9 @@ const request = ({ method, query = {} }: { method: string; query: Record<string,
 		url.searchParams.append(key, value);
 	});
 
-	return fetch(url).then((response) => {
+	return fetch(url, {
+		cache
+	}).then((response) => {
 		return response.json();
 	});
 };
@@ -92,7 +115,7 @@ const nonRelevantTagPatterns = [
  * Given an array of LastFm Tags,
  * returns an array of tags that are not in the nonRelevantTags array
  */
-export const filterOutIrrelevantTags = (
+const filterOutIrrelevantTags = (
 	tags: Array<LastFmTag>,
 	{
 		artist
@@ -201,5 +224,29 @@ export const looseGetTopTags = ({
 		}
 
 		throw err;
+	});
+};
+
+/**
+ * Gets the summary information of a genre. The request is cached.
+ */
+export const getGenreInfo = (genre: string) => {
+	return request({
+		method: 'tag.getInfo',
+		query: {
+			tag: genre
+		},
+		cache: 'force-cache'
+	}).then((json) => {
+		const notFound = json.tag.total === 0;
+
+		if (notFound) {
+			throw createGenreNotFoundError();
+		}
+
+		return {
+			name: json.tag.name,
+			summary: json.tag.wiki?.summary
+		} as LastFmGenreInfo;
 	});
 };

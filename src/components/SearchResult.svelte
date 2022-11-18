@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Genre from './Genre.svelte';
 	import type { LastFmArtistWithGenres, LastFmErrorObject } from '$lib/lastFm';
 
 	export let term: string;
@@ -25,7 +26,7 @@
 			<ul class="genres">
 				{#each artist.genres.slice(0, 8) as tag}
 					<li class="genre">
-						<a href={tag.url} target="_blank" rel="noreferrer">{tag.name}</a>
+						<Genre {tag} />
 					</li>
 				{/each}
 			</ul>
@@ -48,18 +49,7 @@
 		gap: clamp(1rem, 2vw, 5rem);
 		list-style: none;
 		padding: 0;
-		font-size: clamp(2rem, 3.5vw + 4.5vh, 10rem);
 		margin-top: 2rem;
-	}
-
-	.genre a {
-		text-decoration-style: solid;
-		background-color: #000;
-		color: white;
-		padding: 0.5rem 1rem;
-	}
-	.genre a:hover {
-		text-decoration-style: dotted;
 	}
 
 	.loading {
