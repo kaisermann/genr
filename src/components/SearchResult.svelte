@@ -49,6 +49,7 @@
 		list-style: none;
 		padding: 0;
 		font-size: clamp(2rem, 3.5vw + 4.5vh, 10rem);
+		margin-top: 2rem;
 	}
 
 	.genre a {
