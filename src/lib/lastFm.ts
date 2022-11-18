@@ -78,15 +78,14 @@ const nonRelevantTags = [
 	'singer-songwriter',
 	'beautiful-voice',
 	'oldies',
-	'50s',
-	'60s',
-	'70s',
-	'80s',
-	'90s',
-	'00s',
 	'usa',
 	'uk',
 	'england'
+];
+
+const nonRelevantTagPatterns = [
+	// 80s, 80's, 90s, 90's, 00s, 00's, etc
+	/\d{2}['`]?s/i
 ];
 
 /**
@@ -102,7 +101,7 @@ export const filterOutIrrelevantTags = (
 	}
 ) => {
 	// remove spaces and lowercase artist name
-	const normalizedArtist = artist.toLocaleLowerCase().replace(/\W/g, '-');
+	const normalizedArtist = artist.toLocaleLowerCase().replace(/\s+/g, '-');
 
 	// get a version of the artist without a possible article (the beatles vs beatles)
 	const artistWithoutArticles = normalizedArtist.replace(/^(the|a|an)-+/i, '');
@@ -117,6 +116,7 @@ export const filterOutIrrelevantTags = (
 		const normalizedTag = tag.name.toLocaleLowerCase().replace(/\W/g, '-');
 
 		if (nonRelevantTags.includes(normalizedTag)) return false;
+		if (nonRelevantTagPatterns.some((pattern) => pattern.test(normalizedTag))) return false;
 
 		// Filter out tags that are the same as the artist name
 		if (normalizedTag === normalizedArtist) return false;
