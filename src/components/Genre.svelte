@@ -6,10 +6,12 @@
 	let summary: string | undefined;
 	let summaryPromise: Promise<unknown> | undefined = undefined;
 
-	let touched = false;
+	let interacted = false;
 	let mouse = [-1, -1];
 
-	$: if (touched && summaryPromise == null && summary == null) {
+	const supportsHover = typeof window !== 'undefined' && window.matchMedia('(hover:hover)').matches;
+
+	$: if (supportsHover && interacted && summaryPromise == null && summary == null) {
 		summaryPromise = getGenreInfo(tag.name).then((response) => {
 			summary = response.summary;
 		});
@@ -31,7 +33,7 @@
 </script>
 
 <div
-	class="genre"
+	class="container"
 	on:mousemove={(e) => (mouse = [e.clientX, e.clientY])}
 	style="
         --mouse-x: {mouse[0]}px;
@@ -40,11 +42,11 @@
 >
 	<a
 		class="badge"
-		on:mouseover={() => (touched = true)}
-		on:focus={() => (touched = true)}
 		href={tag.url}
 		target="_blank"
 		rel="noreferrer"
+		on:mouseover={() => (interacted = true)}
+		on:focus={() => (interacted = true)}
 	>
 		{tag.name}
 	</a>
@@ -57,6 +59,14 @@
 </div>
 
 <style>
+	.container {
+		position: relative;
+	}
+
+	.container:not(:hover) .summary {
+		visibility: hidden;
+	}
+
 	.badge {
 		appearance: none;
 		text-decoration-style: solid;
@@ -72,33 +82,33 @@
 		text-decoration: underline dotted;
 	}
 
-	.genre {
-		position: relative;
-	}
-
-	.genre:not(:hover) .summary:not(.static) {
-		visibility: hidden;
-	}
-
-	.summary {
-		background: #fff;
-		border: 0.5rem dashed #000;
-		padding: 0.5rem;
-	}
-
 	.summary :global(a) {
 		color: #000;
 	}
 
 	.summary {
-		pointer-events: none;
 		position: fixed;
 		top: 0;
 		left: 0;
 		z-index: 1;
+
+		max-width: 400px;
+		padding: 0.5rem;
+
 		transform-origin: 0 0;
 		transform: translate(calc(var(--mouse-x) + 1.5rem), calc(var(--mouse-y) + 1.5rem));
-		max-width: 400px;
+
 		font-size: clamp(1rem, 1.5vw + 1.5vh, 1.5rem);
+
+		background: #fff;
+		border: 0.5rem dashed #000;
+
+		pointer-events: none;
+	}
+
+	@media (hover: none) {
+		.summary {
+			visibility: hidden;
+		}
 	}
 </style>
