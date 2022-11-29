@@ -1,6 +1,6 @@
 <script lang="ts">
-	import SearchResult from '../components/SearchResult.svelte';
-	import SearchForm from '../components/SearchForm.svelte';
+	import SearchResult from '../../components/SearchResult.svelte';
+	import SearchForm from '../../components/SearchForm.svelte';
 	import type { PageData } from './$types';
 	import { onMount } from 'svelte';
 	import { getCachedGenres, setCachedGenres } from '$lib/cache';

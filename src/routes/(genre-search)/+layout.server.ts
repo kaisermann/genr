@@ -1,4 +1,4 @@
-import type { LayoutServerLoad } from './$types';
+import type { LayoutServerLoad } from "./$types";
 
 // Load artist data in the server if artist is defined in the URL
 export async function load({ params, url }: LayoutServerLoad) {

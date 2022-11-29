@@ -21,6 +21,13 @@
 	// An id used to prevent stale promises from updating the result
 	let activeSearchController: AbortController | undefined = undefined;
 
+	function trackArtistSearch(artistName: string) {
+		const eventName = `genre-search_${artistName.replace(/\W+/g, '_')}`
+			.substring(0, 64)
+			.toLocaleLowerCase();
+		window.panelbear('track', eventName);
+	}
+
 	const [handleSearch, cancelDebouncedSearch] = debounceFn((searchTerm: string) => {
 		activeSearchController?.abort();
 
@@ -57,8 +64,10 @@
 			if (controller.signal.aborted) return;
 			if (json.error) return;
 
-			const artist = json.data;
+			const artist = json.data as LastFmArtistWithGenres;
 			const normalizedArtistName = artist.name.toLocaleLowerCase();
+
+			trackArtistSearch(artist.name);
 
 			// cache the artist and its genres
 			setCachedGenres({ ...cachedGenres, [normalizedArtistName]: artist });
@@ -103,9 +112,10 @@
 		result = undefined;
 
 		if (isCached) {
-			result = cachedGenres[possibleName];
+			result = cachedGenres[possibleName] as LastFmArtistWithGenres;
 			error = undefined;
 			state = 'fullfilled';
+			trackArtistSearch(result.name);
 			return;
 		}
 

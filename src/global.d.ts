@@ -1,0 +1,1 @@
+import '@panelbear/panelbear-js'
