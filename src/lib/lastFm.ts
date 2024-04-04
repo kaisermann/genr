@@ -103,7 +103,8 @@ const nonRelevantTags = [
 	'oldies',
 	'usa',
 	'uk',
-	'england'
+	'england',
+	'great-discovery'
 ];
 
 const nonRelevantTagPatterns = [
