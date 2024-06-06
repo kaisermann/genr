@@ -109,7 +109,9 @@ const nonRelevantTags = [
 
 const nonRelevantTagPatterns = [
 	// 80s, 80's, 90s, 90's, 00s, 00's, etc
-	/\d{2}['`]?s/i
+	/\d{2}['`]?s/i,
+	// number-only tags
+	/^\d+$/
 ];
 
 /**
