@@ -125,7 +125,7 @@
 	}
 </script>
 
-<form method="post">
+<form method="post" on:submit={(e) => e.preventDefault()}>
 	<input
 		name="artistName"
 		type="text"
