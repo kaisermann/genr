@@ -43,4 +43,31 @@ describe('filterOutIrrelevantTags', () => {
 
 		expect(filterOutIrrelevantTags(tags, { artist: 'Daft Punk' })).toEqual(tags);
 	});
+
+	test('removes standalone geography and nationality tags found in Last.fm results', () => {
+		const tags = [
+			tag('british'),
+			tag('American'),
+			tag('german'),
+			tag('Japanese'),
+			tag('new york'),
+			tag('los angeles'),
+			tag('california'),
+			tag('rock')
+		];
+
+		expect(filterOutIrrelevantTags(tags, { artist: 'Radiohead' })).toEqual([tag('rock')]);
+	});
+
+	test('keeps compound genres that contain location words', () => {
+		const tags = [
+			tag('french house'),
+			tag('latin pop'),
+			tag('west coast hip hop'),
+			tag('british invasion'),
+			tag('brazilian jazz')
+		];
+
+		expect(filterOutIrrelevantTags(tags, { artist: 'Daft Punk' })).toEqual(tags);
+	});
 });

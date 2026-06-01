@@ -11,14 +11,29 @@ import {
 	type LastFmGenreInfo,
 	type LastFmTag
 } from '$lib/lastFm';
+import { createCache } from '$lib/server/cache';
 import { filterOutIrrelevantTags } from '$lib/tagFilter';
 
 const API_BASE_URL = 'https://ws.audioscrobbler.com/2.0';
+const ARTIST_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
+const GENRE_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 7;
+const STALE_WHILE_REVALIDATE_MS = 1000 * 60 * 60 * 24 * 30;
+
+const artistCache = createCache<LastFmArtistWithGenres>({
+	maxAgeMs: ARTIST_CACHE_MAX_AGE_MS,
+	staleWhileRevalidateMs: STALE_WHILE_REVALIDATE_MS
+});
+
+const genreCache = createCache<LastFmGenreInfo>({
+	maxAgeMs: GENRE_CACHE_MAX_AGE_MS,
+	staleWhileRevalidateMs: STALE_WHILE_REVALIDATE_MS
+});
 
 type LastFmRequestOptions = {
 	method: string;
 	query: Record<string, string | number>;
 	cache?: RequestCache;
+	fetcher?: typeof fetch;
 };
 
 type LastFmArtistMatch = {
@@ -71,7 +86,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 const getArtistUrl = (canonicalName: string) =>
 	`https://www.last.fm/music/${canonicalName.replace(/\s+/g, '+').toLocaleLowerCase()}`;
 
-const request = async ({ method, query = {}, cache }: LastFmRequestOptions) => {
+const request = async ({ method, query = {}, cache, fetcher = fetch }: LastFmRequestOptions) => {
 	const url = new URL(API_BASE_URL);
 
 	url.searchParams.append('method', method);
@@ -82,7 +97,7 @@ const request = async ({ method, query = {}, cache }: LastFmRequestOptions) => {
 		url.searchParams.append(key, String(value));
 	});
 
-	const response = await fetch(url, { cache });
+	const response = await fetcher(url, { cache });
 
 	if (!response.ok) {
 		throw createUpstreamFailureError();
@@ -95,8 +110,8 @@ const request = async ({ method, query = {}, cache }: LastFmRequestOptions) => {
 	}
 };
 
-export const searchArtistName = async (partialName: string) => {
-	const data = await request({ method: 'artist.search', query: { artist: partialName } });
+export const searchArtistName = async (partialName: string, fetcher?: typeof fetch) => {
+	const data = await request({ method: 'artist.search', query: { artist: partialName }, fetcher });
 
 	if (!isRecord(data)) {
 		throw createArtistNotFoundError();
@@ -114,13 +129,17 @@ export const searchArtistName = async (partialName: string) => {
 	throw createArtistNotFoundError();
 };
 
-export const getTopTags = async (name: string): Promise<LastFmArtistWithGenres> => {
+export const getTopTags = async (
+	name: string,
+	fetcher?: typeof fetch
+): Promise<LastFmArtistWithGenres> => {
 	const json = (await request({
 		method: 'artist.gettoptags',
 		query: {
 			artist: name,
 			autocorrect: 1
-		}
+		},
+		fetcher
 	})) as LastFmTopTagsResponse;
 
 	if (json.error != null) {
@@ -152,10 +171,12 @@ export const getTopTags = async (name: string): Promise<LastFmArtistWithGenres> 
 	};
 };
 
-export const looseGetTopTags = async ({
-	searchName
+const uncachedLooseGetTopTags = async ({
+	searchName,
+	fetcher
 }: {
 	searchName?: string;
+	fetcher?: typeof fetch;
 }): Promise<LastFmArtistWithGenres> => {
 	const possibleName = searchName?.trim();
 
@@ -164,14 +185,14 @@ export const looseGetTopTags = async ({
 	}
 
 	try {
-		return await getTopTags(possibleName);
+		return await getTopTags(possibleName, fetcher);
 	} catch (err) {
 		if (!isArtistNotFoundError(err) && !isNoGenresFoundError(err)) {
 			throw err;
 		}
 
 		try {
-			return await getTopTags(await searchArtistName(possibleName));
+			return await getTopTags(await searchArtistName(possibleName, fetcher), fetcher);
 		} catch (err) {
 			// If there are still no genres here, assume the artist does not exist.
 			if (isNoGenresFoundError(err)) {
@@ -183,13 +204,37 @@ export const looseGetTopTags = async ({
 	}
 };
 
-export const getGenreInfo = async (genre: string): Promise<LastFmGenreInfo> => {
+export const looseGetTopTags = async ({
+	searchName,
+	fetcher
+}: {
+	searchName?: string;
+	fetcher?: typeof fetch;
+}): Promise<LastFmArtistWithGenres> => {
+	const possibleName = searchName?.trim();
+
+	if (!possibleName) {
+		throw createBadRequestError('No name provided');
+	}
+
+	const key = possibleName.toLocaleLowerCase();
+	const { value } = await artistCache.get(key, () =>
+		uncachedLooseGetTopTags({ searchName: possibleName, fetcher })
+	);
+	return value;
+};
+
+const uncachedGetGenreInfo = async (
+	genre: string,
+	fetcher?: typeof fetch
+): Promise<LastFmGenreInfo> => {
 	const json = (await request({
 		method: 'tag.getInfo',
 		query: {
 			tag: genre
 		},
-		cache: 'force-cache'
+		cache: 'force-cache',
+		fetcher
 	})) as LastFmTagInfoResponse;
 
 	if (json.error != null) {
@@ -204,4 +249,14 @@ export const getGenreInfo = async (genre: string): Promise<LastFmGenreInfo> => {
 		name: json.tag.name || genre,
 		summary: json.tag.wiki?.summary || ''
 	};
+};
+
+export const getGenreInfo = async (
+	genre: string,
+	fetcher?: typeof fetch
+): Promise<LastFmGenreInfo> => {
+	const possibleGenre = genre.trim();
+	const key = possibleGenre.toLocaleLowerCase();
+	const { value } = await genreCache.get(key, () => uncachedGetGenreInfo(possibleGenre, fetcher));
+	return value;
 };

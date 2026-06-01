@@ -31,6 +31,16 @@ pnpm test:e2e
 Netlify should build with Node 22 and pnpm 10.18.0, as configured in `netlify.toml`.
 Production also needs `LASTFM_API_KEY` set as a Netlify environment variable.
 
+Successful Last.fm-backed API responses are cacheable:
+
+- `/api/genres?artist=...`: 1 hour HTTP max-age, 1 day stale-while-revalidate.
+- `/api/genre?tag=...`: 1 day HTTP max-age, 7 days stale-while-revalidate.
+
+The server also keeps a warm in-memory cache for Last.fm lookups. It dedupes concurrent
+misses, does not cache failures, and can serve stale successful values while refreshing.
+Because Netlify functions are ephemeral, this cache is an optimization only; correctness
+must not depend on a warm process.
+
 After deploy, run:
 
 ```sh

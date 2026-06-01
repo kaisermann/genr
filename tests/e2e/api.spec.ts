@@ -17,6 +17,9 @@ test.describe('/api/genres', () => {
 		const body = await response.json();
 
 		expect(response.status()).toBe(200);
+		expect(response.headers()['cache-control']).toBe(
+			'public, max-age=3600, stale-while-revalidate=86400'
+		);
 		expect(body.error).toBeNull();
 		expect(body.data).toEqual(
 			expect.objectContaining({
@@ -57,6 +60,9 @@ test.describe('/api/genre', () => {
 		const body = await response.json();
 
 		expect(response.status()).toBe(200);
+		expect(response.headers()['cache-control']).toBe(
+			'public, max-age=86400, stale-while-revalidate=604800'
+		);
 		expect(body.error).toBeNull();
 		expect(body.data).toEqual(
 			expect.objectContaining({

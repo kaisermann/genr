@@ -3,7 +3,7 @@ import { normalizeLastFmError } from '$lib/lastFm';
 import { looseGetTopTags } from '$lib/server/lastFm';
 
 // Load artist data in the server if artist is defined in the URL
-export const load: LayoutServerLoad = async ({ params, url }) => {
+export const load: LayoutServerLoad = async ({ fetch, params, url }) => {
 	const pageUrl = url.href;
 	const origin = url.origin;
 
@@ -17,7 +17,7 @@ export const load: LayoutServerLoad = async ({ params, url }) => {
 				origin,
 				pageUrl,
 				searchTerm: normalizedName,
-				artistWithGenres: await looseGetTopTags({ searchName: normalizedName }),
+				artistWithGenres: await looseGetTopTags({ searchName: normalizedName, fetcher: fetch }),
 				error: undefined
 			};
 		} catch (error) {

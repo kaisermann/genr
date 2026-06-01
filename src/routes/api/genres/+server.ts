@@ -11,6 +11,10 @@ import {
 } from '$lib/lastFm';
 import { looseGetTopTags } from '$lib/server/lastFm';
 
+const SUCCESS_CACHE_HEADERS = {
+	'cache-control': 'public, max-age=3600, stale-while-revalidate=86400'
+};
+
 function errorStatus(error: LastFmErrorObject) {
 	if (isArtistNotFoundError(error) || isNoGenresFoundError(error)) return 404;
 	return 502;
@@ -28,7 +32,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	try {
 		const data = await looseGetTopTags({ searchName: artistName });
 		const body: ApiResponse<LastFmArtistWithGenres> = { data, error: null };
-		return json(body);
+		return json(body, { headers: SUCCESS_CACHE_HEADERS });
 	} catch (err) {
 		const error = normalizeLastFmError(err);
 		const body: ApiResponse<LastFmArtistWithGenres> = { data: null, error };

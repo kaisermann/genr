@@ -13,7 +13,8 @@
 	function loadSummary() {
 		const searchParams = new URLSearchParams({ tag: tag.name });
 
-		summaryPromise = fetch(`/api/genre?${searchParams}`)
+		summaryPromise = window
+			.fetch(`/api/genre?${searchParams}`)
 			.then(async (response) => {
 				const json = (await response
 					.json()

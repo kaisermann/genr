@@ -42,12 +42,10 @@
 
 		const searchParams = new URLSearchParams({ artist: searchTerm });
 
-		const searchPromise: Promise<ApiResponse<LastFmArtistWithGenres> | undefined> = fetch(
-			`/api/genres?${searchParams}`,
-			{
+		const searchPromise: Promise<ApiResponse<LastFmArtistWithGenres> | undefined> = window
+			.fetch(`/api/genres?${searchParams}`, {
 				signal: activeSearchController.signal
-			}
-		)
+			})
 			.then(async (response) => {
 				const json = (await response
 					.json()

@@ -9,6 +9,10 @@ import {
 } from '$lib/lastFm';
 import { getGenreInfo } from '$lib/server/lastFm';
 
+const SUCCESS_CACHE_HEADERS = {
+	'cache-control': 'public, max-age=86400, stale-while-revalidate=604800'
+};
+
 export const GET: RequestHandler = async ({ url }) => {
 	const tag = url.searchParams.get('tag');
 
@@ -21,7 +25,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	try {
 		const data = await getGenreInfo(tag);
 		const body: ApiResponse<LastFmGenreInfo> = { data, error: null };
-		return json(body);
+		return json(body, { headers: SUCCESS_CACHE_HEADERS });
 	} catch (err) {
 		const error = normalizeLastFmError(err);
 		const body: ApiResponse<LastFmGenreInfo> = { data: null, error };
