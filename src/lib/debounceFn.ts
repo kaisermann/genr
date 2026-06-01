@@ -1,10 +1,10 @@
-export function debounceFn<T extends (...args: any[]) => any>(
-	fn: T,
+export function debounceFn<Args extends unknown[]>(
+	fn: (...args: Args) => unknown,
 	delay: number
-): [(...args: Parameters<T>) => void, () => void] {
+): [(...args: Args) => void, () => void] {
 	let timer: number | undefined;
 
-	const debouncedFn = (...args: Parameters<T>) => {
+	const debouncedFn = (...args: Args) => {
 		if (timer) clearTimeout(timer);
 
 		timer = window.setTimeout(() => {

@@ -4,7 +4,7 @@ export const getFromLocalStorage = (key: string) => {
 	return JSON.parse(window.localStorage.getItem(key) || 'null');
 };
 
-export const setToLocalStorage = (key: string, value: any) => {
+export const setToLocalStorage = (key: string, value: unknown) => {
 	if (typeof window === 'undefined') return;
 
 	window.localStorage.setItem(key, JSON.stringify(value));

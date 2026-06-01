@@ -2,10 +2,19 @@
 	import Genre from './Genre.svelte';
 	import type { LastFmArtistWithGenres, LastFmErrorObject } from '$lib/lastFm';
 
-	export let term: string;
-	export let artist: LastFmArtistWithGenres | undefined = undefined;
-	export let error: LastFmErrorObject | undefined = undefined;
-	export let state: 'idle' | 'loading' | 'fullfilled' = 'idle';
+	type SearchState = 'idle' | 'loading' | 'fullfilled';
+
+	let {
+		term,
+		artist = undefined,
+		error = undefined,
+		state = 'idle'
+	}: {
+		term: string;
+		artist?: LastFmArtistWithGenres;
+		error?: LastFmErrorObject;
+		state?: SearchState;
+	} = $props();
 </script>
 
 <div class="result">
@@ -18,13 +27,14 @@
 			<p class="error">{error.message}</p>
 		{:else if artist != null}
 			<div>
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 				<a class="name" href={artist.url} target="_blank" rel="noreferrer">
 					{artist.name}
 				</a>
 			</div>
 
 			<ul class="genres">
-				{#each artist.genres.slice(0, 8) as tag}
+				{#each artist.genres.slice(0, 8) as tag (tag.url)}
 					<li class="genre">
 						<Genre {tag} />
 					</li>

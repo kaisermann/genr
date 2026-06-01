@@ -1,60 +1,81 @@
 <script lang="ts">
-	import { getGenreInfo, type LastFmTag } from '$lib/lastFm';
+	import { type ApiResponse, type LastFmGenreInfo, type LastFmTag } from '$lib/lastFm';
 
-	export let tag: LastFmTag;
+	let { tag }: { tag: LastFmTag } = $props();
 
-	let summary: string | undefined;
-	let summaryPromise: Promise<unknown> | undefined = undefined;
+	let summary = $state<string | undefined>();
+	let summaryPromise = $state<Promise<void> | undefined>();
 
-	let interacted = false;
-	let mouse = [-1, -1];
+	let mouse = $state([-1, -1]);
 
 	const supportsHover = typeof window !== 'undefined' && window.matchMedia('(hover:hover)').matches;
 
-	$: if (supportsHover && interacted && summaryPromise == null && summary == null) {
-		summaryPromise = getGenreInfo(tag.name).then((response) => {
-			summary = response.summary;
-		});
+	function loadSummary() {
+		const searchParams = new URLSearchParams({ tag: tag.name });
+
+		summaryPromise = fetch(`/api/genre?${searchParams}`)
+			.then(async (response) => {
+				const json = (await response
+					.json()
+					.catch(() => null)) as ApiResponse<LastFmGenreInfo> | null;
+
+				if (json?.data) {
+					summary = json.data.summary;
+					return;
+				}
+
+				throw new Error(json?.error.message || 'Could not load genre summary');
+			})
+			.catch(() => {
+				// Leave the badge usable; a later hover can retry the summary request.
+				summaryPromise = undefined;
+			});
 	}
 
-	$: renderedSummary = (() => {
+	function handleInteraction() {
+		if (supportsHover && summaryPromise == null && summary == null) {
+			loadSummary();
+		}
+	}
+
+	let renderedSummary = $derived.by(() => {
 		if (summary == null) return;
 		const firstPeriod = summary.indexOf('.');
 
 		// 80 just in case
-		if (firstPeriod === -1) return `${summary.slice(80)}...`;
+		if (firstPeriod === -1) return `${summary.slice(0, 80)}...`;
 
 		const trimmedSummary = summary
 			.replace(/<a href="http:\/\/www.last.fm.*?">Read more on Last\.fm<\/a>\./gi, '')
 			.slice(0, firstPeriod + 1);
 
 		return `${trimmedSummary.trim()}`;
-	})();
+	});
 </script>
 
 <div
 	class="container"
-	on:mousemove={(e) => (mouse = [e.clientX, e.clientY])}
+	role="presentation"
+	onmousemove={(e) => (mouse = [e.clientX, e.clientY])}
 	style="
         --mouse-x: {mouse[0]}px;
         --mouse-y: {mouse[1]}px;
     "
 >
+	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 	<a
 		class="badge"
 		href={tag.url}
 		target="_blank"
 		rel="noreferrer"
-		on:mouseover={() => (interacted = true)}
-		on:focus={() => (interacted = true)}
+		onmouseover={handleInteraction}
+		onfocus={handleInteraction}
 	>
 		{tag.name}
 	</a>
 
 	{#if renderedSummary != null && renderedSummary.length > 0}
-		<div class="summary">
-			{@html renderedSummary}
-		</div>
+		<div class="summary">{renderedSummary}</div>
 	{/if}
 </div>
 

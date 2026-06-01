@@ -1,41 +1,37 @@
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
 import {
-	createArtistNotFoundError,
-	getTopTags,
+	createBadRequestError,
 	isArtistNotFoundError,
 	isNoGenresFoundError,
-	searchArtistName
+	normalizeLastFmError,
+	type ApiResponse,
+	type LastFmArtistWithGenres,
+	type LastFmErrorObject
 } from '$lib/lastFm';
-import { json } from '@sveltejs/kit';
+import { looseGetTopTags } from '$lib/server/lastFm';
 
-export function GET({ url }) {
+function errorStatus(error: LastFmErrorObject) {
+	if (isArtistNotFoundError(error) || isNoGenresFoundError(error)) return 404;
+	return 502;
+}
+
+export const GET: RequestHandler = async ({ url }) => {
 	const artistName = url.searchParams.get('artist');
 
-	if (artistName == null) {
-		return json({ code: 10002, message: 'No name provided' });
+	if (artistName == null || artistName.trim().length === 0) {
+		const error = createBadRequestError('No name provided');
+		const body: ApiResponse<LastFmArtistWithGenres> = { data: null, error };
+		return json(body, { status: 400 });
 	}
 
-	return getTopTags(artistName)
-		.then((result) => {
-			return json({ data: result, error: null });
-		})
-		.catch((err) => {
-			if (isArtistNotFoundError(err) || isNoGenresFoundError(err)) {
-				return searchArtistName(artistName)
-					.then(getTopTags)
-					.then((result) => json({ data: result, error: null }))
-					.catch((err) => {
-						// if there're still no genres here, assume the artist doesn't exist
-						if (isNoGenresFoundError(err)) {
-							throw { error: createArtistNotFoundError() };
-						}
-
-						throw { error: err };
-					});
-			}
-
-			throw { error: err };
-		})
-		.catch((err) => {
-			return json(err);
-		});
-}
+	try {
+		const data = await looseGetTopTags({ searchName: artistName });
+		const body: ApiResponse<LastFmArtistWithGenres> = { data, error: null };
+		return json(body);
+	} catch (err) {
+		const error = normalizeLastFmError(err);
+		const body: ApiResponse<LastFmArtistWithGenres> = { data: null, error };
+		return json(body, { status: errorStatus(error) });
+	}
+};

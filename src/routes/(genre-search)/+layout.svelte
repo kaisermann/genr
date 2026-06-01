@@ -1,33 +1,47 @@
 <script lang="ts">
 	import SearchResult from '../../components/SearchResult.svelte';
 	import SearchForm from '../../components/SearchForm.svelte';
-	import type { PageData } from './$types';
+	import type { LayoutData } from './$types';
+	import type { Snippet } from 'svelte';
+	import { afterNavigate, replaceState } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { getCachedGenres, setCachedGenres } from '$lib/cache';
 
-	export let data: PageData;
+	type SearchState = 'idle' | 'loading' | 'fullfilled';
 
-	let searchError = data.error;
-	let searchResult = data.artistWithGenres;
-	let searchTerm = data.searchTerm || '';
-	let searchState: 'idle' | 'loading' | 'fullfilled' = data.artistWithGenres
-		? 'fullfilled'
-		: 'idle';
+	let { data, children }: { data: LayoutData; children?: Snippet } = $props();
 
-	$: canonicalName = searchTerm.length > 0 ? searchResult?.name : '';
+	// svelte-ignore state_referenced_locally
+	let searchError = $state<LayoutData['error']>(data.error);
+	// svelte-ignore state_referenced_locally
+	let searchResult = $state<LayoutData['artistWithGenres']>(data.artistWithGenres);
+	// svelte-ignore state_referenced_locally
+	let searchTerm = $state(data.searchTerm || '');
+	// svelte-ignore state_referenced_locally
+	let searchState = $state<SearchState>(data.artistWithGenres ? 'fullfilled' : 'idle');
+	let routerReady = $state(false);
 
-	$: slug = (canonicalName || searchTerm).toLocaleLowerCase().replace(/\W+/g, '+');
+	let canonicalName = $derived(searchTerm.length > 0 ? searchResult?.name : '');
 
-	$: pageTitle = ['G e n r', searchResult?.name].filter(Boolean).join(' | ');
+	let slug = $derived((canonicalName || searchTerm).toLocaleLowerCase().replace(/\W+/g, '+'));
 
-	$: {
-		if (typeof window === 'undefined') break $;
+	let pageTitle = $derived(['G e n r', searchResult?.name].filter(Boolean).join(' | '));
 
-		window.history.replaceState(null, '', `/${slug}`);
-	}
+	afterNavigate(() => {
+		routerReady = true;
+	});
+
+	$effect(() => {
+		if (!routerReady) return;
+		replaceState(`/${slug}`, {});
+	});
 
 	// cache a possible server side result
 	onMount(() => {
+		setTimeout(() => {
+			routerReady = true;
+		});
+
 		if (data.artistWithGenres) {
 			setCachedGenres({
 				...getCachedGenres(),
@@ -47,10 +61,12 @@
 		bind:error={searchError}
 		bind:state={searchState}
 		bind:result={searchResult}
+		onTermChange={(term: string) => (searchTerm = term)}
 	/>
 
 	<div class="content">
 		<SearchResult term={searchTerm} artist={searchResult} error={searchError} state={searchState} />
+		{@render children?.()}
 	</div>
 </div>
 

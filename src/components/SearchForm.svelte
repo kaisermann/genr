@@ -1,32 +1,38 @@
-<script lang="ts" context="module">
+<script module lang="ts">
 	import { getCachedAliases, getCachedGenres, setCachedAliases, setCachedGenres } from '$lib/cache';
 	import { debounceFn } from '$lib/debounceFn';
-	import type { LastFmArtistWithGenres, LastFmErrorObject } from '$lib/lastFm';
+	import {
+		createUpstreamFailureError,
+		type ApiResponse,
+		type LastFmArtistWithGenres,
+		type LastFmErrorObject
+	} from '$lib/lastFm';
 
 	export type SearchPromise = Promise<LastFmArtistWithGenres>;
+	type SearchState = 'idle' | 'loading' | 'fullfilled';
+	type Props = {
+		term?: string;
+		result?: LastFmArtistWithGenres;
+		error?: LastFmErrorObject;
+		state?: SearchState;
+		onTermChange?: (term: string) => void;
+	};
 </script>
 
 <script lang="ts">
-	export let term = '';
-	export let result: LastFmArtistWithGenres | undefined = undefined;
-	export let error: LastFmErrorObject | undefined = undefined;
-	export let state: 'idle' | 'loading' | 'fullfilled' = 'idle';
+	let {
+		term = $bindable(''),
+		result = $bindable<LastFmArtistWithGenres | undefined>(),
+		error = $bindable<LastFmErrorObject | undefined>(),
+		state: searchState = $bindable<SearchState>('idle'),
+		onTermChange = () => {}
+	}: Props = $props();
 
-	let innerTerm = term;
 	let cachedGenres = getCachedGenres();
 	let cachedAliases = getCachedAliases();
 
-	$: term = innerTerm.trim();
-
 	// An id used to prevent stale promises from updating the result
 	let activeSearchController: AbortController | undefined = undefined;
-
-	function trackArtistSearch(artistName: string) {
-		const eventName = `genre-search_${artistName.replace(/\W+/g, '_')}`
-			.substring(0, 64)
-			.toLocaleLowerCase();
-		window.panelbear('track', eventName);
-	}
 
 	const [handleSearch, cancelDebouncedSearch] = debounceFn((searchTerm: string) => {
 		activeSearchController?.abort();
@@ -34,19 +40,33 @@
 		const controller = new AbortController();
 		activeSearchController = controller;
 
-		const searchPromise = fetch(`/api/genres?artist=${searchTerm}`, {
-			signal: activeSearchController.signal
-		})
-			.then((response) => response.json())
-			.catch((err) => {
+		const searchParams = new URLSearchParams({ artist: searchTerm });
+
+		const searchPromise: Promise<ApiResponse<LastFmArtistWithGenres> | undefined> = fetch(
+			`/api/genres?${searchParams}`,
+			{
+				signal: activeSearchController.signal
+			}
+		)
+			.then(async (response) => {
+				const json = (await response
+					.json()
+					.catch(() => null)) as ApiResponse<LastFmArtistWithGenres> | null;
+
+				if (json?.error) return json;
+				if (json?.data) return json;
+
+				return { data: null, error: createUpstreamFailureError() };
+			})
+			.catch(() => {
 				if (controller.signal.aborted) return;
-				throw err;
+				return { data: null, error: createUpstreamFailureError() };
 			});
 
 		// update the result
 		searchPromise
 			.then((json) => {
-				if (controller.signal.aborted) return;
+				if (controller.signal.aborted || json == null) return;
 				if (json.error) {
 					error = json.error;
 					result = undefined;
@@ -56,18 +76,17 @@
 				}
 			})
 			.finally(() => {
-				state = 'fullfilled';
+				if (controller.signal.aborted) return;
+				searchState = 'fullfilled';
 			});
 
 		// update cache
 		searchPromise.then((json) => {
-			if (controller.signal.aborted) return;
+			if (controller.signal.aborted || json == null) return;
 			if (json.error) return;
 
-			const artist = json.data as LastFmArtistWithGenres;
+			const artist = json.data;
 			const normalizedArtistName = artist.name.toLocaleLowerCase();
-
-			trackArtistSearch(artist.name);
 
 			// cache the artist and its genres
 			setCachedGenres({ ...cachedGenres, [normalizedArtistName]: artist });
@@ -93,11 +112,14 @@
 
 	async function handleInputChange(e: Event) {
 		cancelActiveSearch();
-		state = 'idle';
+		searchState = 'idle';
 
 		if (typeof window === 'undefined') return;
 
 		const searchTerm = (e.target as HTMLInputElement).value.trim();
+		term = searchTerm;
+		onTermChange(searchTerm);
+
 		const normalizedSearchTerm = searchTerm.toLocaleLowerCase();
 		const possibleName = cachedAliases[normalizedSearchTerm] || normalizedSearchTerm;
 
@@ -114,27 +136,25 @@
 		if (isCached) {
 			result = cachedGenres[possibleName] as LastFmArtistWithGenres;
 			error = undefined;
-			state = 'fullfilled';
-			trackArtistSearch(result.name);
+			searchState = 'fullfilled';
 			return;
 		}
 
-		state = 'loading';
+		searchState = 'loading';
 		activeSearchController?.abort();
 		handleSearch(possibleName);
 	}
 </script>
 
-<form method="post" on:submit={(e) => e.preventDefault()}>
+<form method="post" onsubmit={(e) => e.preventDefault()}>
 	<input
 		name="artistName"
 		type="text"
 		placeholder="Artist name..."
 		aria-label="Artist Name"
-		autofocus
 		autocomplete="off"
-		bind:value={innerTerm}
-		on:input={handleInputChange}
+		bind:value={term}
+		oninput={handleInputChange}
 	/>
 </form>
 
