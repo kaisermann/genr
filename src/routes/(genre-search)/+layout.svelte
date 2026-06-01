@@ -6,8 +6,7 @@
 	import { afterNavigate, replaceState } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { getCachedGenres, setCachedGenres } from '$lib/cache';
-
-	type SearchState = 'idle' | 'loading' | 'fullfilled';
+	import type { SearchState } from '$lib/searchState';
 
 	let { data, children }: { data: LayoutData; children?: Snippet } = $props();
 
@@ -18,7 +17,7 @@
 	// svelte-ignore state_referenced_locally
 	let searchTerm = $state(data.searchTerm || '');
 	// svelte-ignore state_referenced_locally
-	let searchState = $state<SearchState>(data.artistWithGenres ? 'fullfilled' : 'idle');
+	let searchState = $state<SearchState>(data.artistWithGenres ? 'fulfilled' : 'idle');
 	let routerReady = $state(false);
 
 	let canonicalName = $derived(searchTerm.length > 0 ? searchResult?.name : '');
@@ -26,6 +25,15 @@
 	let slug = $derived((canonicalName || searchTerm).toLocaleLowerCase().replace(/\W+/g, '+'));
 
 	let pageTitle = $derived(['G e n r', searchResult?.name].filter(Boolean).join(' | '));
+	let pageDescription = $derived(
+		searchResult
+			? `Find the main genres for ${searchResult.name}: ${searchResult.genres
+					.slice(0, 5)
+					.map((genre) => genre.name)
+					.join(', ')}.`
+			: 'Quickly find the main Last.fm genres for any artist.'
+	);
+	let pageUrl = $derived(data.origin ? `${data.origin}/${slug}` : data.pageUrl);
 
 	afterNavigate(() => {
 		routerReady = true;
@@ -53,9 +61,17 @@
 
 <svelte:head>
 	<title>{pageTitle}</title>
+	<meta name="description" content={pageDescription} />
+	<meta property="og:title" content={pageTitle} />
+	<meta property="og:description" content={pageDescription} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={pageUrl} />
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content={pageTitle} />
+	<meta name="twitter:description" content={pageDescription} />
 </svelte:head>
 
-<div class="container">
+<div class="container" data-app-ready={routerReady}>
 	<SearchForm
 		bind:term={searchTerm}
 		bind:error={searchError}

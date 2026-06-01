@@ -8,7 +8,9 @@
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test:unit": "vitest run tests/tagFilter.test.ts",
 		"test:e2e": "playwright test",
+		"smoke:prod": "node scripts/production-smoke.mjs",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write ."
 	},
@@ -30,7 +32,8 @@
 		"tslib": "^2.3.1",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.48.1",
-		"vite": "^7.2.4"
+		"vite": "^7.2.4",
+		"vitest": "^4.1.8"
 	},
 	"type": "module",
 	"packageManager": "pnpm@10.18.0"

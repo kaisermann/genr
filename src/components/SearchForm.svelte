@@ -7,9 +7,9 @@
 		type LastFmArtistWithGenres,
 		type LastFmErrorObject
 	} from '$lib/lastFm';
+	import type { SearchState } from '$lib/searchState';
 
 	export type SearchPromise = Promise<LastFmArtistWithGenres>;
-	type SearchState = 'idle' | 'loading' | 'fullfilled';
 	type Props = {
 		term?: string;
 		result?: LastFmArtistWithGenres;
@@ -77,7 +77,7 @@
 			})
 			.finally(() => {
 				if (controller.signal.aborted) return;
-				searchState = 'fullfilled';
+				searchState = 'fulfilled';
 			});
 
 		// update cache
@@ -136,7 +136,7 @@
 		if (isCached) {
 			result = cachedGenres[possibleName] as LastFmArtistWithGenres;
 			error = undefined;
-			searchState = 'fullfilled';
+			searchState = 'fulfilled';
 			return;
 		}
 

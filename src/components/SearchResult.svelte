@@ -1,8 +1,7 @@
 <script lang="ts">
 	import Genre from './Genre.svelte';
 	import type { LastFmArtistWithGenres, LastFmErrorObject } from '$lib/lastFm';
-
-	type SearchState = 'idle' | 'loading' | 'fullfilled';
+	import type { SearchState } from '$lib/searchState';
 
 	let {
 		term,

@@ -22,5 +22,23 @@ Checks:
 ```sh
 pnpm check
 pnpm lint
+pnpm test:unit
 pnpm test:e2e
+```
+
+## Production
+
+Netlify should build with Node 22 and pnpm 10.18.0, as configured in `netlify.toml`.
+Production also needs `LASTFM_API_KEY` set as a Netlify environment variable.
+
+After deploy, run:
+
+```sh
+pnpm smoke:prod
+```
+
+To smoke-test another deployment URL:
+
+```sh
+GENR_PRODUCTION_URL=https://example.netlify.app pnpm smoke:prod
 ```
