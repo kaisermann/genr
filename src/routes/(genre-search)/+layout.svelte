@@ -22,7 +22,7 @@
 
 	let canonicalName = $derived(searchTerm.length > 0 ? searchResult?.name : '');
 
-	let slug = $derived((canonicalName || searchTerm).toLocaleLowerCase().replace(/\W+/g, '+'));
+	let slug = $derived((canonicalName || searchTerm.trim()).toLocaleLowerCase().replace(/\W+/g, '+'));
 
 	let pageTitle = $derived(['G e n r', searchResult?.name].filter(Boolean).join(' | '));
 	let pageDescription = $derived(
@@ -77,7 +77,6 @@
 		bind:error={searchError}
 		bind:state={searchState}
 		bind:result={searchResult}
-		onTermChange={(term: string) => (searchTerm = term)}
 	/>
 
 	<div class="content">

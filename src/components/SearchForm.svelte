@@ -115,7 +115,6 @@
 		if (typeof window === 'undefined') return;
 
 		const searchTerm = (e.target as HTMLInputElement).value.trim();
-		term = searchTerm;
 		onTermChange(searchTerm);
 
 		const normalizedSearchTerm = searchTerm.toLocaleLowerCase();
